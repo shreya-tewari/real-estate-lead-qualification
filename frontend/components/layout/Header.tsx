@@ -39,8 +39,8 @@ export default function Header({ showBreadcrumb = false, transparent = false, ad
   const initials = isAdmin
     ? 'A'
     : auth.name
-    ? auth.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'U';
+      ? auth.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+      : 'U';
 
   const displayName = isAdmin ? (auth.username || 'Admin') : (auth.name || 'User');
 
