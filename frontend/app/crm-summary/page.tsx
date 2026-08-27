@@ -55,15 +55,64 @@ function InfoCard({ title, subtitle, rows, headerColor = 'var(--gradient)' }: In
 export default function CRMSummaryPage() {
   const router = useRouter();
   const { isLoading } = useAuthGuard(false);
-  const { crmData, resetAll, setCurrentStep } = useLead();
+  const { resetAll, setCurrentStep, backendLeadId } = useLead();
+  const [leadData, setLeadData] = useState<any>(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !crmData) router.replace('/conversation');
-  }, [isLoading, crmData, router]);
+    if (!backendLeadId) {
+      router.replace('/');
+      return;
+    }
 
-  if (isLoading || !crmData) return null;
+    fetch(`http://localhost:8000/api/leads/${backendLeadId}`)
+      .then(res => res.json())
+      .then(data => {
+        setLeadData(data);
+        setLoadingData(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingData(false);
+      });
+  }, [backendLeadId, router]);
 
-  const { lead, score, appointment, assignedTeam } = crmData;
+  if (isLoading || loadingData) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
+        <div style={{ width: 40, height: 40, border: '4px solid #f0f0f0', borderTopColor: '#667eea', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      </div>
+    );
+  }
+
+  if (!leadData) return null;
+
+  const lead = {
+    name: leadData.name,
+    email: leadData.email || 'N/A',
+    phone: leadData.phone || 'N/A',
+    buyerType: leadData.buyer_type || 'N/A',
+    budget: leadData.budget ? `$${leadData.budget.toLocaleString()}` : 'N/A',
+    location: leadData.location || 'N/A',
+    propertyType: leadData.property_type || 'N/A',
+    timeline: leadData.purchase_timeline || 'N/A',
+    financing: leadData.financing || 'N/A',
+    purpose: leadData.purchase_purpose || 'N/A',
+  };
+
+  const score = {
+    score: leadData.qualification_score || 0,
+    status: leadData.qualification_status || 'Unqualified'
+  };
+
+  const assignedTeam = leadData.assigned_agent || 'General Sales Team';
+  const appointment = leadData.appointment_time ? {
+    dayLabel: leadData.appointment_date,
+    time: leadData.appointment_time,
+    consultant: assignedTeam
+  } : null;
+
+  const salesBrief = leadData.ai_summary || 'No AI summary generated.';
 
   const handleDownload = () => {
     const content = `
@@ -92,7 +141,7 @@ Team:         ${assignedTeam}
 ${appointment ? `Appointment: ${appointment.dayLabel} at ${appointment.time} with ${appointment.consultant}` : ''}
 
 SALES BRIEF
-${crmData.salesBrief}
+${salesBrief}
     `.trim();
 
     const blob = new Blob([content], { type: 'text/plain' });
@@ -231,7 +280,10 @@ ${crmData.salesBrief}
         </div>
 
         {/* AI Sales Brief */}
-        <SalesSummary crmData={crmData} />
+        <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>AI Generated Sales Brief</h3>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{salesBrief}</p>
+        </div>
       </div>
     </div>
   );

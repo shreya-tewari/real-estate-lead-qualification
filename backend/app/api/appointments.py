@@ -9,7 +9,7 @@ from app.schemas.appointment import (
     AppointmentResponse
 )
 from app.services.appointment_service import get_available_slots
-
+from app.services.crm import sync_lead_to_crm
 router = APIRouter(
     prefix="/api/appointments",
     tags=["Appointments"]
@@ -150,7 +150,13 @@ def create_appointment(
     db.refresh(appointment)
 
     # ----------------------------------------------
-    # 4. Return appointment
+    # 4. Sync to CRM
+    # ----------------------------------------------
+
+    sync_lead_to_crm(db, request.lead_id, appointment)
+
+    # ----------------------------------------------
+    # 5. Return appointment
     # ----------------------------------------------
 
     return appointment

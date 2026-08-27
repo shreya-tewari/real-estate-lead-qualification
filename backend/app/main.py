@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 from app.models import Lead, Conversation, Appointment
@@ -14,6 +15,14 @@ app = FastAPI(
     title="AI Real Estate Lead Qualification POC",
     description="Backend for AI-powered real estate lead qualification and appointment automation",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -19,6 +19,8 @@ interface LeadContextType {
   crmData: CRMData | null;
   finalizeCRM: () => void;
   resetAll: () => void;
+  backendLeadId: number | null;
+  setBackendLeadId: (id: number | null) => void;
 }
 
 const defaultQualification: QualificationData = {
@@ -43,6 +45,7 @@ export function LeadProvider({ children }: { children: ReactNode }) {
   const [leadScore, setLeadScore] = useState<LeadScore | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<SelectedAppointment | null>(null);
   const [crmData, setCrmData] = useState<CRMData | null>(null);
+  const [backendLeadId, setBackendLeadId] = useState<number | null>(null);
 
   const addMessage = useCallback((msg: Omit<Message, 'id' | 'timestamp'>) => {
     const newMsg: Message = {
@@ -85,6 +88,7 @@ export function LeadProvider({ children }: { children: ReactNode }) {
     setLeadScore(null);
     setSelectedAppointment(null);
     setCrmData(null);
+    setBackendLeadId(null);
   }, []);
 
   return (
@@ -103,6 +107,8 @@ export function LeadProvider({ children }: { children: ReactNode }) {
       crmData,
       finalizeCRM,
       resetAll,
+      backendLeadId,
+      setBackendLeadId,
     }}>
       {children}
     </LeadContext.Provider>

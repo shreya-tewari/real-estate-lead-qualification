@@ -23,7 +23,7 @@ class Lead(Base):
     location = Column(String(255), nullable=True)
     property_type = Column(String(100), nullable=True)
 
-    budget = Column(Float, nullable=True)
+    budget = Column(String(255), nullable=True)
     financing = Column(String(100), nullable=True)
 
     purchase_timeline = Column(String(100), nullable=True)

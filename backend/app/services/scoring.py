@@ -40,7 +40,7 @@ def calculate_lead_score(lead) -> int:
     # Budget - 15 points
     # --------------------------------------------------
 
-    if lead.budget is not None and lead.budget > 0:
+    if lead.budget:
         score += 15
 
     # --------------------------------------------------

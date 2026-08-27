@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Badge from '@/components/common/Badge';
 import { useLead } from '@/contexts/LeadContext';
@@ -43,6 +43,21 @@ export default function AdminPage() {
   const { isLoading } = useAuthGuard(true); // admin-only route
   const { resetAll } = useLead();
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [leads, setLeads] = useState<any[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/leads')
+      .then(res => res.json())
+      .then(data => {
+        setLeads(data);
+        setLoadingLeads(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingLeads(false);
+      });
+  }, []);
 
   // Render a neutral loader while auth hydrates — prevents flash redirect
   if (isLoading) {
@@ -56,7 +71,8 @@ export default function AdminPage() {
     );
   }
 
-  const filteredLeads = filterStatus === 'all' ? mockLeads : mockLeads.filter(l => l.status === filterStatus);
+  const displayLeads = leads.length > 0 ? leads : (loadingLeads ? [] : mockLeads);
+  const filteredLeads = filterStatus === 'all' ? displayLeads : displayLeads.filter(l => (l.qualification_status || l.status) === filterStatus);
 
   const stats = [
     { label: 'Total Leads Today', value: '147', change: '+12%', up: true, icon: <Users size={20} />, color: '#667eea' },
@@ -266,17 +282,29 @@ export default function AdminPage() {
                     <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                         <MapPin size={12} color="var(--text-muted)" />
-                        {lead.location}
+                        {lead.location || 'N/A'}
                       </div>
                     </td>
                     <td style={{ padding: '14px 16px' }}>
-                      <span style={{ fontSize: 16, fontWeight: 900, color: scoreColor(lead.score) }}>{lead.score}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>/100</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 32, height: 4, background: '#f0f0f0', borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ width: `${lead.qualification_score || lead.score || 0}%`, height: '100%', background: scoreColor(lead.qualification_score || lead.score || 0) }} />
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{lead.qualification_score || lead.score || 0}</span>
+                      </div>
                     </td>
-                    <td style={{ padding: '14px 16px' }}>{statusBadge(lead.status)}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{lead.type}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{lead.budget}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--text-muted)' }}>{lead.time}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {statusBadge(lead.qualification_status || lead.status || 'Not Qualified')}
+                    </td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                      {lead.buyer_type || lead.type || 'N/A'}
+                    </td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {lead.budget ? `$${lead.budget.toLocaleString()}` : lead.budget === 0 ? 'TBD' : (lead.budget || 'N/A')}
+                    </td>
+                    <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--text-muted)' }}>
+                      {lead.created_at ? new Date(lead.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : lead.time}
+                    </td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button

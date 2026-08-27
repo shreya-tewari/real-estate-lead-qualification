@@ -64,8 +64,15 @@ const testimonials = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { setCurrentStep, resetAll } = useLead();
+  const { setCurrentStep, resetAll, setBackendLeadId, updateQualificationData } = useLead();
   const [scrolled, setScrolled] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  
+  // Form State
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -74,9 +81,34 @@ export default function HomePage() {
   }, []);
 
   const handleStart = () => {
-    resetAll();
-    setCurrentStep('conversation');
-    router.push('/conversation');
+    setShowModal(true);
+  };
+
+  const submitLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, source: 'Website', property_interest: 'Any' })
+      });
+      const data = await res.json();
+      
+      if (data.id) {
+        resetAll();
+        setBackendLeadId(data.id);
+        updateQualificationData({ name, email, phone });
+        setCurrentStep('conversation');
+        router.push('/conversation');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -512,6 +544,36 @@ export default function HomePage() {
           © 2026 PropAI. AI-Powered Real Estate Lead Qualification System.
         </p>
       </footer>
+
+      {/* Lead Capture Modal */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'scaleIn 0.3s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)' }}>Get Started</h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24 }}>Enter your details to start the conversation with our AI agent.</p>
+            <form onSubmit={submitLead} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Full Name *</label>
+                <input required value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Sarah Smith" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 14, outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Email</label>
+                <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="sarah@example.com" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 14, outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Phone</label>
+                <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="+971 50 123 4567" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 14, outline: 'none' }} />
+              </div>
+              <button type="submit" disabled={isSubmitting} style={{ background: 'var(--gradient)', color: 'white', padding: '14px', borderRadius: 12, fontSize: 15, fontWeight: 700, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: 8, opacity: isSubmitting ? 0.7 : 1 }}>
+                {isSubmitting ? 'Loading...' : 'Start Chat'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

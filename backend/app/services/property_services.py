@@ -25,8 +25,8 @@ def load_properties() -> list[dict]:
 def search_properties(
     location: str | None = None,
     property_type: str | None = None,
-    max_budget: float | None = None,
-    min_budget: float | None = None,
+    max_budget: str | float | None = None,
+    min_budget: str | float | None = None,
     bedrooms: int | None = None
 ) -> list[dict]:
     """
@@ -58,13 +58,19 @@ def search_properties(
 
         # Maximum budget
         if max_budget is not None:
-            if property_item["price"] > max_budget:
-                continue
+            try:
+                if property_item["price"] > float(max_budget):
+                    continue
+            except (ValueError, TypeError):
+                pass
 
         # Minimum budget
         if min_budget is not None:
-            if property_item["price"] < min_budget:
-                continue
+            try:
+                if property_item["price"] < float(min_budget):
+                    continue
+            except (ValueError, TypeError):
+                pass
 
         # Bedroom filter
         if bedrooms is not None:
