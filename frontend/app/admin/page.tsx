@@ -149,17 +149,7 @@ export default function AdminPage() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
-          <button
-            onClick={() => { resetAll(); window.location.href = '/conversation'; }}
-            style={{
-              background: 'white', color: 'var(--primary)', border: 'none', borderRadius: 12,
-              padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            }}
-          >
-            <MessageSquare size={15} />
-            New Lead
-          </button>
+
         </div>
       </div>
 

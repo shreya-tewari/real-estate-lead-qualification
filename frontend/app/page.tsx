@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLead } from '@/contexts/LeadContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/layout/Header';
+import AdminLoginModal from '@/components/common/AdminLoginModal';
 import {
   MessageSquare, BarChart3, Calendar, CheckCircle, ArrowRight,
   Zap, Shield, Globe, TrendingUp, Users, Star, Building2,
@@ -65,8 +67,10 @@ const testimonials = [
 export default function HomePage() {
   const router = useRouter();
   const { setCurrentStep, resetAll, setBackendLeadId, updateQualificationData } = useLead();
+  const { isAdmin, loginAsUser } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
@@ -85,6 +89,15 @@ export default function HomePage() {
     setShowModal(true);
   };
 
+  const handleAdminClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAdmin) {
+      router.push('/admin');
+    } else {
+      setShowAdminModal(true);
+    }
+  };
+
   const submitLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
@@ -100,6 +113,7 @@ export default function HomePage() {
 
       if (data.id) {
         resetAll();
+        loginAsUser(name, email);
         setBackendLeadId(data.id);
         updateQualificationData({ name, email, phone });
         setCurrentStep('conversation');
@@ -124,9 +138,23 @@ export default function HomePage() {
             <span style={{ fontWeight: 800, fontSize: 18, color: scrolled ? 'var(--text-primary)' : 'white', letterSpacing: '-0.03em' }}>PropAI</span>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <a href="/admin" style={{ fontSize: 13, fontWeight: 600, color: scrolled ? 'var(--text-secondary)' : 'rgba(255,255,255,0.85)', textDecoration: 'none', padding: '6px 14px', borderRadius: 20, border: `1px solid ${scrolled ? 'var(--border)' : 'rgba(255,255,255,0.3)'}`, transition: 'all 0.2s' }}>
+            <button
+              onClick={handleAdminClick}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: scrolled ? 'var(--text-secondary)' : 'rgba(255,255,255,0.85)',
+                background: 'transparent',
+                border: `1px solid ${scrolled ? 'var(--border)' : 'rgba(255,255,255,0.3)'}`,
+                padding: '6px 14px',
+                borderRadius: 20,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontFamily: 'inherit',
+              }}
+            >
               Admin
-            </a>
+            </button>
             <button
               onClick={handleStart}
               style={{ background: scrolled ? 'var(--gradient)' : 'white', color: scrolled ? 'white' : 'var(--primary)', border: 'none', borderRadius: 20, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
@@ -555,6 +583,9 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal isOpen={showAdminModal} onClose={() => setShowAdminModal(false)} />
     </div>
   );
 }

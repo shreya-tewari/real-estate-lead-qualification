@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Building2, ChevronRight, MessageSquare, BarChart3, Calendar,
@@ -9,6 +9,7 @@ import {
 import { useLead } from '@/contexts/LeadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppStep } from '@/types/Lead';
+import AdminLoginModal from '@/components/common/AdminLoginModal';
 
 const steps: { key: AppStep; label: string; icon: React.ReactNode; shortLabel: string }[] = [
   { key: 'conversation', label: 'Conversation', shortLabel: 'Chat', icon: <MessageSquare size={14} /> },
@@ -30,10 +31,13 @@ export default function Header({ showBreadcrumb = false, transparent = false, ad
   const { currentStep } = useLead();
   const { auth, isAuthenticated, isAdmin, logout } = useAuth();
   const currentIndex = stepOrder.indexOf(currentStep);
+  const [showAdminModal, setShowAdminModal] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    router.push('/login');
+    router.push('/');
+    setTimeout(() => {
+      logout();
+    }, 150);
   };
 
   const initials = isAdmin
@@ -135,7 +139,13 @@ export default function Header({ showBreadcrumb = false, transparent = false, ad
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {adminLink && !isAdmin && (
           <button
-            onClick={() => router.push(isAdmin ? '/admin' : '/login?tab=admin')}
+            onClick={() => {
+              if (isAdmin) {
+                router.push('/admin');
+              } else {
+                setShowAdminModal(true);
+              }
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -231,6 +241,7 @@ export default function Header({ showBreadcrumb = false, transparent = false, ad
           </button>
         )}
       </div>
+      <AdminLoginModal isOpen={showAdminModal} onClose={() => setShowAdminModal(false)} />
     </header>
   );
 }
