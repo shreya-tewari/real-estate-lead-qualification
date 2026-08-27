@@ -34,7 +34,7 @@ Score: {lead.qualification_score} ({lead.qualification_status})
     prompt += "\nReturn ONLY the paragraph text without any prefix or quotes."
 
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model="openai/gpt-oss-120b",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
     )

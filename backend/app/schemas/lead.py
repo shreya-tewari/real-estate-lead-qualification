@@ -35,6 +35,8 @@ class LeadResponse(BaseModel):
     qualification_status: Optional[str] = None
     assigned_agent: Optional[str] = None
     ai_summary: Optional[str] = None
+    appointment_date: Optional[str] = None
+    appointment_time: Optional[str] = None
 
     class Config:
         from_attributes = True
