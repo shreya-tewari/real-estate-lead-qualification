@@ -1227,13 +1227,16 @@ def process_chat(
             "appointment": appointment_data,
             "available_slots": None
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        if "lead" in locals() and lead:
-
-            history = get_conversation_history(lead.id)
-            if history and history[-1].get("role") == "user":
-                history.pop()
         import traceback
-        with open("chat_error.log", "w") as f:
-            f.write(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Unexpected API error")
+        tb = traceback.format_exc()
+        try:
+            import os
+            log_path = os.path.join(os.path.dirname(__file__), "..", "..", "chat_error.log")
+            with open(log_path, "w") as f:
+                f.write(tb)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail=str(e) or "Unexpected API error")
