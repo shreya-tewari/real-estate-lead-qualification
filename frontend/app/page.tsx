@@ -67,7 +67,7 @@ export default function HomePage() {
   const { setCurrentStep, resetAll, setBackendLeadId, updateQualificationData } = useLead();
   const [scrolled, setScrolled] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  
+
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -87,7 +87,7 @@ export default function HomePage() {
   const submitLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    
+
     setIsSubmitting(true);
     try {
       const res = await fetch('http://localhost:8000/api/leads', {
@@ -96,7 +96,7 @@ export default function HomePage() {
         body: JSON.stringify({ name, email, phone, source: 'Website', property_interest: 'Any' })
       });
       const data = await res.json();
-      
+
       if (data.id) {
         resetAll();
         setBackendLeadId(data.id);
@@ -158,19 +158,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
             {/* Left: Text */}
             <div>
-              <div
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '6px 14px',
-                  fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.9)',
-                  marginBottom: 24, border: '1px solid rgba(255,255,255,0.25)',
-                  backdropFilter: 'blur(8px)',
-                }}
-                className="animate-fadeInDown"
-              >
-                <Zap size={12} color="#fde047" />
-                AI-Powered Lead Qualification
-              </div>
+
 
               <h1
                 style={{ fontSize: 52, fontWeight: 900, color: 'white', lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.03em' }}
@@ -216,19 +204,7 @@ export default function HomePage() {
                   Start Conversation
                   <ArrowRight size={16} />
                 </button>
-                <button
-                  style={{
-                    background: 'rgba(255,255,255,0.1)', color: 'white',
-                    border: '2px solid rgba(255,255,255,0.4)', borderRadius: 40, padding: '16px 28px',
-                    fontSize: 15, fontWeight: 600, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    backdropFilter: 'blur(8px)', transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.2)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'}
-                >
-                  Watch Demo
-                </button>
+
               </div>
 
               {/* Trust indicators */}
