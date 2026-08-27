@@ -8,12 +8,11 @@ from app.config import settings
 
 
 # --------------------------------------------------
-# Groq / OpenAI-compatible client
+# OpenAI client
 # --------------------------------------------------
 
 client = OpenAI(
-    api_key=settings.groq_api_key,
-    base_url="https://api.groq.com/openai/v1",
+    api_key=settings.openai_api_key,
     max_retries=1
 )
 
@@ -569,11 +568,11 @@ Do not invent or recommend properties.
     )
 
     # ==================================================
-    # 6. Call Groq
+    # 6. Call OpenAI
     # ==================================================
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="gpt-4o",
 
         messages=messages,
 

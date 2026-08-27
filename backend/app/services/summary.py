@@ -5,8 +5,7 @@ from app.models.lead import Lead
 from app.models.appointment import Appointment
 
 client = OpenAI(
-    api_key=settings.groq_api_key,
-    base_url="https://api.groq.com/openai/v1"
+    api_key=settings.openai_api_key,
 )
 
 def generate_lead_summary(lead: Lead, appointment: Appointment = None) -> str:
@@ -34,7 +33,7 @@ Score: {lead.qualification_score} ({lead.qualification_status})
     prompt += "\nReturn ONLY the paragraph text without any prefix or quotes."
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
     )
