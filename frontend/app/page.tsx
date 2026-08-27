@@ -6,6 +6,7 @@ import { useLead } from '@/contexts/LeadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/layout/Header';
 import AdminLoginModal from '@/components/common/AdminLoginModal';
+import { API_BASE_URL } from '@/config';
 import {
   MessageSquare, BarChart3, Calendar, CheckCircle, ArrowRight,
   Zap, Shield, Globe, TrendingUp, Users, Star, Building2,
@@ -104,7 +105,7 @@ export default function HomePage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:8000/api/leads', {
+      const res = await fetch(`${API_BASE_URL}/api/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, phone, location, source: 'Website', property_interest: 'Any' })

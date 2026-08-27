@@ -6,6 +6,8 @@ import { useLead } from '@/contexts/LeadContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import Header from '@/components/layout/Header';
 import SalesSummary from '@/components/crm/SalesSummary';
+import { API_BASE_URL } from '@/config';
+import Badge from '@/components/common/Badge';
 import {
   User, Mail, Phone, Calendar as CalIcon, DollarSign, MapPin, Home,
   Clock, CreditCard, Target, Download, Share2, MessageSquare, RefreshCw,
@@ -64,7 +66,7 @@ export default function CRMSummaryPage() {
       return;
     }
 
-    fetch(`http://localhost:8000/api/leads/${backendLeadId}`)
+    fetch(`${API_BASE_URL}/api/leads/${backendLeadId}`)
       .then(res => res.json())
       .then(data => {
         setLeadData(data);

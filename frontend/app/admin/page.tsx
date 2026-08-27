@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Badge from '@/components/common/Badge';
 import { useLead } from '@/contexts/LeadContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { API_BASE_URL } from '@/config';
 import {
   Users, TrendingUp, Calendar, Clock, MapPin, BarChart3,
   CheckCircle, AlertCircle, XCircle, ArrowUpRight, ArrowDownRight,
@@ -30,8 +31,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:8000/api/leads').then(res => res.json()),
-      fetch('http://localhost:8000/api/appointments/all').then(res => res.json())
+      fetch(`${API_BASE_URL}/api/leads`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/api/appointments/all`).then(res => res.json())
     ])
     .then(([leadsData, appointmentsData]) => {
       // Map appointments to leads
@@ -348,7 +349,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => {
                             setViewLead(lead);
-                            fetch(`http://localhost:8000/api/leads/${lead.id}/history`)
+                            fetch(`${API_BASE_URL}/api/leads/${lead.id}/history`)
                               .then(r => r.json())
                               .then(d => setViewHistory(d.history || []));
                           }}
@@ -362,7 +363,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => {
                             setBookLead(lead);
-                            fetch('http://localhost:8000/api/appointments/slots')
+                            fetch(`${API_BASE_URL}/api/appointments/slots`)
                               .then(r => r.json())
                               .then(d => setSlots(d.slots || []));
                           }}
@@ -462,7 +463,7 @@ export default function AdminPage() {
                     disabled={booking}
                     onClick={() => {
                       setBooking(true);
-                      fetch('http://localhost:8000/api/appointments', {
+                      fetch(`${API_BASE_URL}/api/appointments`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

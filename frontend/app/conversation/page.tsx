@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLead } from '@/contexts/LeadContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import Header from '@/components/layout/Header';
+import { API_BASE_URL } from '@/config';
 import MessageBubble from '@/components/chat/MessageBubble';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import ChatInput from '@/components/chat/ChatInput';
@@ -33,7 +34,7 @@ export default function ConversationPage() {
     setAvailableSlots([]); // Hide slots once clicked
     
     try {
-      const res = await fetch('http://localhost:8000/api/appointments', {
+      const res = await fetch(`${API_BASE_URL}/api/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,7 +83,7 @@ export default function ConversationPage() {
     setIsTyping(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lead_id: backendLeadId, message: text })
