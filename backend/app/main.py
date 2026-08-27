@@ -88,4 +88,79 @@ def test_openai():
         results["openai_client"] = f"Failed: {str(e)}"
         results["openai_client_traceback"] = traceback.format_exc()
         
-    return results
+    return results
+
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
+from datetime import datetime
+
+# Global in-memory list to store 500 error tracebacks
+error_logs = []
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code >= 500:
+        import traceback
+        tb = traceback.format_exc()
+        if "NoneType" in tb or not tb.strip():
+            tb = "".join(traceback.format_stack())
+            
+        print(f"--- HTTP EXCEPTION CAUGHT ({exc.status_code}) ---")
+        print(f"Detail: {exc.detail}")
+        print(tb)
+        print(f"-----------------------------------------------")
+        
+        error_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "method": request.method,
+            "url": str(request.url),
+            "headers": dict(request.headers),
+            "error_type": "HTTPException",
+            "error_message": str(exc.detail),
+            "traceback": tb
+        }
+        error_logs.append(error_entry)
+        if len(error_logs) > 50:
+            error_logs.pop(0)
+            
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    tb = traceback.format_exc()
+    
+    print(f"--- GLOBAL EXCEPTION CAUGHT ---")
+    print(tb)
+    print(f"-------------------------------")
+    
+    error_entry = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "method": request.method,
+        "url": str(request.url),
+        "headers": dict(request.headers),
+        "error_type": type(exc).__name__,
+        "error_message": str(exc),
+        "traceback": tb
+    }
+    error_logs.append(error_entry)
+    if len(error_logs) > 50:
+        error_logs.pop(0)
+        
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"}
+    )
+
+@app.get("/api/error-logs")
+def get_error_logs():
+    return {
+        "count": len(error_logs),
+        "logs": error_logs
+    }
+
