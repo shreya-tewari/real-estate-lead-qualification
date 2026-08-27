@@ -72,6 +72,7 @@ export default function HomePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function HomePage() {
       const res = await fetch('http://localhost:8000/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, source: 'Website', property_interest: 'Any' })
+        body: JSON.stringify({ name, email, phone, location, source: 'Website', property_interest: 'Any' })
       });
       const data = await res.json();
 
@@ -542,6 +543,10 @@ export default function HomePage() {
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Phone</label>
                 <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="+971 50 123 4567" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 14, outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>Preferred Location</label>
+                <input value={location} onChange={e => setLocation(e.target.value)} type="text" placeholder="e.g. Dubai, Abu Dhabi, London" style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', fontSize: 14, outline: 'none' }} />
               </div>
               <button type="submit" disabled={isSubmitting} style={{ background: 'var(--gradient)', color: 'white', padding: '14px', borderRadius: 12, fontSize: 15, fontWeight: 700, border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: 8, opacity: isSubmitting ? 0.7 : 1 }}>
                 {isSubmitting ? 'Loading...' : 'Start Chat'}

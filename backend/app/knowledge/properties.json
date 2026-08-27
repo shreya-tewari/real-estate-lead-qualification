@@ -97,5 +97,77 @@
       "Concierge",
       "Parking"
     ]
+  },
+  {
+    "id": "PROP006",
+    "name": "Yas Island Retreat",
+    "location": "Yas Island",
+    "city": "Abu Dhabi",
+    "property_type": "Villa",
+    "bedrooms": 3,
+    "price": 850000,
+    "currency": "USD",
+    "area_sqft": 2100,
+    "status": "Available",
+    "description": "Beautiful 3-bedroom villa near Yas Marina Circuit and Ferrari World.",
+    "features": [
+      "Private pool",
+      "Garden",
+      "Covered parking"
+    ]
+  },
+  {
+    "id": "PROP007",
+    "name": "Saadiyat Beach Residence",
+    "location": "Saadiyat Island",
+    "city": "Abu Dhabi",
+    "property_type": "Apartment",
+    "bedrooms": 2,
+    "price": 450000,
+    "currency": "USD",
+    "area_sqft": 1300,
+    "status": "Available",
+    "description": "Luxury 2-bedroom apartment with beach access.",
+    "features": [
+      "Beach access",
+      "Gym",
+      "Swimming pool"
+    ]
+  },
+  {
+    "id": "PROP008",
+    "name": "Mayfair Luxury Flat",
+    "location": "Mayfair",
+    "city": "London",
+    "property_type": "Apartment",
+    "bedrooms": 2,
+    "price": 1800000,
+    "currency": "USD",
+    "area_sqft": 1050,
+    "status": "Available",
+    "description": "Elegant 2-bedroom apartment in the heart of London's Mayfair district.",
+    "features": [
+      "Period features",
+      "Concierge",
+      "Central location"
+    ]
+  },
+  {
+    "id": "PROP009",
+    "name": "Manhattan Penthouse",
+    "location": "Upper East Side",
+    "city": "New York",
+    "property_type": "Apartment",
+    "bedrooms": 3,
+    "price": 2500000,
+    "currency": "USD",
+    "area_sqft": 2200,
+    "status": "Available",
+    "description": "Stunning penthouse overlooking Central Park.",
+    "features": [
+      "Park view",
+      "Doorman",
+      "Private terrace"
+    ]
   }
 ]

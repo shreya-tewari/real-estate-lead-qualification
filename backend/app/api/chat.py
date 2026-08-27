@@ -11,6 +11,7 @@ from app.models.lead import Lead
 from app.services.ai_service import chat_with_ai
 from app.services.scoring import score_lead
 from app.services.property_services import search_properties
+import traceback
 
 from app.services.appointment_service import (
     get_available_slots,
@@ -301,103 +302,145 @@ def appointment_response(
     "",
     response_model=ChatResponse
 )
-def chat(
+def process_chat(
     request: ChatRequest,
     db: Session = Depends(get_db)
 ):
+    try:
+        # ==================================================
+        # 1. FIND LEAD
+        # ==================================================
 
-    # ==================================================
-    # 1. FIND LEAD
-    # ==================================================
-
-    lead = (
-        db.query(Lead)
-        .filter(
-            Lead.id == request.lead_id
-        )
-        .first()
-    )
-
-    if not lead:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Lead not found"
+        lead = (
+            db.query(Lead)
+            .filter(
+                Lead.id == request.lead_id
+            )
+            .first()
         )
 
-    message = request.message.strip()
+        if not lead:
 
-    message_lower = message.lower()
+            raise HTTPException(
+                status_code=404,
+                detail="Lead not found"
+            )
 
-    # ==================================================
-    # 2. SAVE USER MESSAGE
-    # ==================================================
+        message = request.message.strip()
 
-    add_message(
-        lead_id=lead.id,
-        role="user",
-        content=message
-    )
+        message_lower = message.lower()
 
-    # ==================================================
-    # 3. GET PENDING APPOINTMENT
-    # ==================================================
+        # ==================================================
+        # 2. SAVE USER MESSAGE
+        # ==================================================
 
-    pending_appointment = (
-        get_pending_appointment(
-            lead.id
+        add_message(
+            lead_id=lead.id,
+            role="user",
+            content=message
         )
-    )
 
-    pending_slots = []
+        # ==================================================
+        # 3. GET PENDING APPOINTMENT
+        # ==================================================
 
-    if pending_appointment:
-
-        pending_slots = (
-            pending_appointment.get(
-                "available_slots",
-                []
+        pending_appointment = (
+            get_pending_appointment(
+                lead.id
             )
         )
 
-    # ==================================================
-    # 4. DETECT "SHOW AVAILABLE SLOTS"
-    # ==================================================
+        pending_slots = []
 
-    show_slots_phrases = [
-        "yes please show",
-        "yes show",
-        "show me",
-        "show available slots",
-        "show me available slots",
-        "show other slots",
-        "show other available slots",
-        "other slots",
-        "other available slots",
-        "show me other slots",
-        "show me other available slots"
-    ]
+        if pending_appointment:
 
-    is_show_slots_request = any(
-        phrase in message_lower
-        for phrase in show_slots_phrases
-    )
+            pending_slots = (
+                pending_appointment.get(
+                    "available_slots",
+                    []
+                )
+            )
 
-    # ==================================================
-    # 5. SHOW ALL AVAILABLE SLOTS
-    # ==================================================
+        # ==================================================
+        # 4. DETECT "SHOW AVAILABLE SLOTS"
+        # ==================================================
 
-    if is_show_slots_request:
+        show_slots_phrases = [
+            "yes please show",
+            "yes show",
+            "show me",
+            "show available slots",
+            "show me available slots",
+            "show other slots",
+            "show other available slots",
+            "other slots",
+            "other available slots",
+            "show me other slots",
+            "show me other available slots"
+        ]
 
-        slots = get_available_slots(
-            db
+        is_show_slots_request = any(
+            phrase in message_lower
+            for phrase in show_slots_phrases
         )
 
-        if not slots:
+        # ==================================================
+        # 5. SHOW ALL AVAILABLE SLOTS
+        # ==================================================
+
+        if is_show_slots_request:
+
+            slots = get_available_slots(
+                db
+            )
+
+            if not slots:
+
+                reply = (
+                    "Sorry, there are currently "
+                    "no available appointment slots."
+                )
+
+                add_message(
+                    lead_id=lead.id,
+                    role="assistant",
+                    content=reply
+                )
+
+                return {
+                    "lead_id": lead.id,
+                    "reply": reply,
+                    "intent": "book_appointment",
+                    "qualification": {},
+                    "qualification_score": (
+                        lead.qualification_score
+                    ),
+                    "qualification_status": (
+                        lead.qualification_status
+                    ),
+                    "appointment": {
+                        "requested": True,
+                        "date": None,
+                        "time": None,
+                        "time_preference": None
+                    },
+                    "available_slots": []
+                }
+
+            # --------------------------------------------------
+            # Save ALL slots for later selection
+            # --------------------------------------------------
+
+            save_pending_appointment(
+                lead_id=lead.id,
+                appointment_date=None,
+                appointment_time=None,
+                available_slots=slots
+            )
 
             reply = (
-                "Sorry, there are currently "
-                "no available appointment slots."
+                "Sure! Here are the available "
+                "appointment slots. Please choose one."
             )
 
             add_message(
@@ -423,229 +466,25 @@ def chat(
                     "time": None,
                     "time_preference": None
                 },
-                "available_slots": []
+                "available_slots": slots
             }
 
-        # --------------------------------------------------
-        # Save ALL slots for later selection
-        # --------------------------------------------------
+        # ==================================================
+        # 6. CHECK IF USER SELECTED A SLOT
+        # ==================================================
 
-        save_pending_appointment(
-            lead_id=lead.id,
-            appointment_date=None,
-            appointment_time=None,
-            available_slots=slots
+        selected_slot = find_selected_slot(
+            message=message,
+            pending_slots=pending_slots
         )
 
-        reply = (
-            "Sure! Here are the available "
-            "appointment slots. Please choose one."
-        )
-
-        add_message(
-            lead_id=lead.id,
-            role="assistant",
-            content=reply
-        )
-
-        return {
-            "lead_id": lead.id,
-            "reply": reply,
-            "intent": "book_appointment",
-            "qualification": {},
-            "qualification_score": (
-                lead.qualification_score
-            ),
-            "qualification_status": (
-                lead.qualification_status
-            ),
-            "appointment": {
-                "requested": True,
-                "date": None,
-                "time": None,
-                "time_preference": None
-            },
-            "available_slots": slots
-        }
-
-    # ==================================================
-    # 6. CHECK IF USER SELECTED A SLOT
-    # ==================================================
-
-    selected_slot = find_selected_slot(
-        message=message,
-        pending_slots=pending_slots
-    )
-
-    if selected_slot:
-
-        try:
-
-            # --------------------------------------------------
-            # Final availability check
-            # --------------------------------------------------
-
-            current_slots = get_available_slots(
-                db
-            )
-
-            still_available = any(
-                slot["date"]
-                == selected_slot["date"]
-
-                and normalize_time(
-                    slot["time"]
-                )
-                ==
-                normalize_time(
-                    selected_slot["time"]
-                )
-
-                for slot in current_slots
-            )
-
-            if not still_available:
-
-                clear_pending_appointment(
-                    lead.id
-                )
-
-                reply = (
-                    "Sorry, that slot is no longer "
-                    "available. Please choose another "
-                    "available slot."
-                )
-
-                add_message(
-                    lead_id=lead.id,
-                    role="assistant",
-                    content=reply
-                )
-
-                return {
-                    "lead_id": lead.id,
-                    "reply": reply,
-                    "intent": "book_appointment",
-                    "qualification": {},
-                    "qualification_score": (
-                        lead.qualification_score
-                    ),
-                    "qualification_status": (
-                        lead.qualification_status
-                    ),
-                    "appointment": None,
-                    "available_slots": current_slots
-                }
-
-            # --------------------------------------------------
-            # Create appointment
-            # --------------------------------------------------
-
-            appointment = create_appointment(
-                db=db,
-                lead_id=lead.id,
-                appointment_date=(
-                    selected_slot["date"]
-                ),
-                appointment_time=(
-                    selected_slot["time"]
-                )
-            )
-
-            # --------------------------------------------------
-            # Clear pending slots
-            # --------------------------------------------------
-
-            clear_pending_appointment(
-                lead.id
-            )
-
-            # --------------------------------------------------
-            # Confirmation
-            # --------------------------------------------------
-
-            reply = (
-                "Your appointment has been "
-                "confirmed for "
-                f"{appointment.appointment_date} "
-                "at "
-                f"{appointment.appointment_time}."
-            )
-
-            add_message(
-                lead_id=lead.id,
-                role="assistant",
-                content=reply
-            )
-
-            return appointment_response(
-                lead=lead,
-                appointment=appointment,
-                qualification={},
-                score=(
-                    lead.qualification_score
-                    or 0
-                ),
-                status=(
-                    lead.qualification_status
-                    or "Not Qualified"
-                )
-            )
-
-        except Exception as e:
-
-            db.rollback()
-
-            raise HTTPException(
-                status_code=409,
-                detail=str(e)
-            )
-
-    # ==================================================
-    # 7. CONFIRM SINGLE PENDING SLOT
-    # ==================================================
-
-    if pending_appointment:
-
-        pending_date = (
-            pending_appointment.get(
-                "date"
-            )
-        )
-
-        pending_time = (
-            pending_appointment.get(
-                "time"
-            )
-        )
-
-        confirmation_phrases = [
-            "yes",
-            "yeah",
-            "yep",
-            "sure",
-            "okay",
-            "ok",
-            "book it",
-            "confirm",
-            "confirm it",
-            "go ahead",
-            "yes please",
-            "yes book it"
-        ]
-
-        is_confirmation = any(
-            message_lower == phrase
-            for phrase in confirmation_phrases
-        )
-
-        if (
-            is_confirmation
-            and pending_date
-            and pending_time
-        ):
+        if selected_slot:
 
             try:
+
+                # --------------------------------------------------
+                # Final availability check
+                # --------------------------------------------------
 
                 current_slots = get_available_slots(
                     db
@@ -653,14 +492,14 @@ def chat(
 
                 still_available = any(
                     slot["date"]
-                    == pending_date
+                    == selected_slot["date"]
 
                     and normalize_time(
                         slot["time"]
                     )
                     ==
                     normalize_time(
-                        pending_time
+                        selected_slot["time"]
                     )
 
                     for slot in current_slots
@@ -699,15 +538,45 @@ def chat(
                         "available_slots": current_slots
                     }
 
+                # --------------------------------------------------
+                # Create appointment
+                # --------------------------------------------------
+
                 appointment = create_appointment(
                     db=db,
                     lead_id=lead.id,
-                    appointment_date=pending_date,
-                    appointment_time=pending_time
+                    appointment_date=(
+                        selected_slot["date"]
+                    ),
+                    appointment_time=(
+                        selected_slot["time"]
+                    )
                 )
+
+                # --------------------------------------------------
+                # Clear pending slots
+                # --------------------------------------------------
 
                 clear_pending_appointment(
                     lead.id
+                )
+
+                # --------------------------------------------------
+                # Confirmation
+                # --------------------------------------------------
+
+                reply = (
+                    "Your appointment has been "
+                    "confirmed for "
+                    f"{appointment.appointment_date} "
+                    "at "
+                    f"{appointment.appointment_time}."
+                )
+
+                add_message(
+                    lead_id=lead.id,
+                    role="assistant",
+                    content=reply
                 )
 
                 return appointment_response(
@@ -733,338 +602,526 @@ def chat(
                     detail=str(e)
                 )
 
-    # ==================================================
-    # 8. LOAD CONVERSATION HISTORY
-    # ==================================================
+        # ==================================================
+        # 7. CONFIRM SINGLE PENDING SLOT
+        # ==================================================
 
-    conversation_history = (
-        get_conversation_history(
-            lead.id
-        )
-    )
+        if pending_appointment:
 
-    # ==================================================
-    # 9. PREPARE LEAD DATA
-    # ==================================================
-
-    lead_data = {
-
-        "id": lead.id,
-
-        "name": lead.name,
-
-        "email": lead.email,
-
-        "phone": lead.phone,
-
-        "source": lead.source,
-
-        "property_interest": (
-            lead.property_interest
-        ),
-
-        "buyer_type": lead.buyer_type,
-
-        "purchase_purpose": (
-            lead.purchase_purpose
-        ),
-
-        "location": lead.location,
-
-        "property_type": (
-            lead.property_type
-        ),
-
-        "budget": lead.budget,
-
-        "financing": lead.financing,
-
-        "purchase_timeline": (
-            lead.purchase_timeline
-        ),
-
-        "previous_property_purchase": (
-            lead.previous_property_purchase
-        ),
-
-        "preferred_contact_time": (
-            lead.preferred_contact_time
-        ),
-
-        "appointment_interest": (
-            lead.appointment_interest
-        )
-    }
-
-    # ==================================================
-    # 10. SEARCH PROPERTIES
-    # ==================================================
-
-    try:
-
-        property_results = search_properties(
-            location=lead.location,
-            property_type=lead.property_type,
-            max_budget=lead.budget
-        )
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Property search error: {str(e)}"
-            )
-        )
-
-    # ==================================================
-    # 11. CALL AI
-    # ==================================================
-
-    try:
-
-        ai_result = chat_with_ai(
-            conversation_history=conversation_history,
-            lead_data=lead_data,
-            property_context=property_results
-        )
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"AI service error: {str(e)}"
-        )
-
-    # ==================================================
-    # 12. READ AI RESULT
-    # ==================================================
-
-    ai_reply = ai_result.get(
-        "reply",
-        "How can I help you?"
-    )
-
-    qualification = ai_result.get(
-        "qualification",
-        {}
-    )
-
-    appointment_data = ai_result.get(
-        "appointment",
-        {}
-    )
-
-    # ==================================================
-    # 13. UPDATE LEAD QUALIFICATION
-    # ==================================================
-
-    qualification_fields = [
-
-        "buyer_type",
-
-        "purchase_purpose",
-
-        "location",
-
-        "property_type",
-
-        "budget",
-
-        "financing",
-
-        "purchase_timeline",
-
-        "previous_property_purchase",
-
-        "preferred_contact_time",
-
-        "appointment_interest"
-    ]
-
-    for field in qualification_fields:
-
-        value = qualification.get(
-            field
-        )
-
-        if value is not None:
-
-            setattr(
-                lead,
-                field,
-                value
-            )
-
-    # ==================================================
-    # 14. CALCULATE SCORE
-    # ==================================================
-
-    try:
-
-        score, status = score_lead(
-            lead
-        )
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Lead scoring error: {str(e)}"
-            )
-        )
-
-    lead.qualification_score = score
-
-    lead.qualification_status = status
-
-    # ==================================================
-    # 15. SAVE AI MESSAGE
-    # ==================================================
-
-    add_message(
-        lead_id=lead.id,
-        role="assistant",
-        content=ai_reply
-    )
-
-    # ==================================================
-    # 16. COMMIT LEAD
-    # ==================================================
-
-    try:
-
-        db.commit()
-
-        db.refresh(lead)
-
-    except Exception as e:
-
-        db.rollback()
-
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Database error: {str(e)}"
-            )
-        )
-
-    # ==================================================
-    # 17. CHECK APPOINTMENT REQUEST
-    # ==================================================
-
-    appointment_requested = (
-        appointment_data.get(
-            "requested",
-            False
-        )
-    )
-
-    # ==================================================
-    # 18. APPOINTMENT REQUEST
-    # ==================================================
-
-    if appointment_requested:
-
-        # --------------------------------------------------
-        # Get available slots
-        # --------------------------------------------------
-
-        slots = get_available_slots(
-            db
-        )
-
-        # --------------------------------------------------
-        # Filter according to AI extraction
-        # --------------------------------------------------
-
-        available_slots = filter_slots(
-            available_slots=slots,
-
-            appointment_date=(
-                appointment_data.get(
+            pending_date = (
+                pending_appointment.get(
                     "date"
                 )
-            ),
+            )
 
-            time_preference=(
-                appointment_data.get(
-                    "time_preference"
+            pending_time = (
+                pending_appointment.get(
+                    "time"
                 )
+            )
+
+            confirmation_phrases = [
+                "yes",
+                "yeah",
+                "yep",
+                "sure",
+                "okay",
+                "ok",
+                "book it",
+                "confirm",
+                "confirm it",
+                "go ahead",
+                "yes please",
+                "yes book it"
+            ]
+
+            is_confirmation = any(
+                message_lower == phrase
+                for phrase in confirmation_phrases
+            )
+
+            if (
+                is_confirmation
+                and pending_date
+                and pending_time
+            ):
+
+                try:
+
+                    current_slots = get_available_slots(
+                        db
+                    )
+
+                    still_available = any(
+                        slot["date"]
+                        == pending_date
+
+                        and normalize_time(
+                            slot["time"]
+                        )
+                        ==
+                        normalize_time(
+                            pending_time
+                        )
+
+                        for slot in current_slots
+                    )
+
+                    if not still_available:
+
+                        clear_pending_appointment(
+                            lead.id
+                        )
+
+                        reply = (
+                            "Sorry, that slot is no longer "
+                            "available. Please choose another "
+                            "available slot."
+                        )
+
+                        add_message(
+                            lead_id=lead.id,
+                            role="assistant",
+                            content=reply
+                        )
+
+                        return {
+                            "lead_id": lead.id,
+                            "reply": reply,
+                            "intent": "book_appointment",
+                            "qualification": {},
+                            "qualification_score": (
+                                lead.qualification_score
+                            ),
+                            "qualification_status": (
+                                lead.qualification_status
+                            ),
+                            "appointment": None,
+                            "available_slots": current_slots
+                        }
+
+                    appointment = create_appointment(
+                        db=db,
+                        lead_id=lead.id,
+                        appointment_date=pending_date,
+                        appointment_time=pending_time
+                    )
+
+                    clear_pending_appointment(
+                        lead.id
+                    )
+
+                    return appointment_response(
+                        lead=lead,
+                        appointment=appointment,
+                        qualification={},
+                        score=(
+                            lead.qualification_score
+                            or 0
+                        ),
+                        status=(
+                            lead.qualification_status
+                            or "Not Qualified"
+                        )
+                    )
+
+                except Exception as e:
+
+                    db.rollback()
+
+                    raise HTTPException(
+                        status_code=409,
+                        detail=str(e)
+                    )
+
+        # ==================================================
+        # 8. LOAD CONVERSATION HISTORY
+        # ==================================================
+
+        conversation_history = (
+            get_conversation_history(
+                lead.id
+            )
+        )
+
+        # ==================================================
+        # 9. PREPARE LEAD DATA
+        # ==================================================
+
+        lead_data = {
+
+            "id": lead.id,
+
+            "name": lead.name,
+
+            "email": lead.email,
+
+            "phone": lead.phone,
+
+            "source": lead.source,
+
+            "property_interest": (
+                lead.property_interest
             ),
 
-            specific_time=(
+            "buyer_type": lead.buyer_type,
+
+            "purchase_purpose": (
+                lead.purchase_purpose
+            ),
+
+            "location": lead.location,
+
+            "property_type": (
+                lead.property_type
+            ),
+
+            "budget": lead.budget,
+
+            "financing": lead.financing,
+
+            "purchase_timeline": (
+                lead.purchase_timeline
+            ),
+
+            "previous_property_purchase": (
+                lead.previous_property_purchase
+            ),
+
+            "preferred_contact_time": (
+                lead.preferred_contact_time
+            ),
+
+            "appointment_interest": (
+                lead.appointment_interest
+            )
+        }
+
+        # ==================================================
+        # 10. SEARCH PROPERTIES
+        # ==================================================
+
+        try:
+
+            property_results = search_properties(
+                location=lead.location,
+                property_type=lead.property_type,
+                max_budget=lead.budget
+            )
+
+        except Exception as e:
+
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    f"Property search error: {str(e)}"
+                )
+            )
+
+        # ==================================================
+        # 11. CALL AI
+        # ==================================================
+
+        try:
+
+            ai_result = chat_with_ai(
+                conversation_history=conversation_history,
+                lead_data=lead_data,
+                property_context=property_results
+            )
+
+        except Exception as e:
+
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI service error: {str(e)}"
+            )
+
+        # ==================================================
+        # 12. READ AI RESULT
+        # ==================================================
+
+        ai_reply = ai_result.get("reply")
+        if not ai_reply:
+            ai_reply = "How can I help you?"
+
+        qualification = ai_result.get(
+            "qualification",
+            {}
+        )
+
+        appointment_data = ai_result.get(
+            "appointment",
+            {}
+        )
+
+        # ==================================================
+        # 13. UPDATE LEAD QUALIFICATION
+        # ==================================================
+
+        qualification_fields = [
+
+            "buyer_type",
+
+            "purchase_purpose",
+
+            "location",
+
+            "property_type",
+
+            "budget",
+
+            "financing",
+
+            "purchase_timeline",
+
+            "previous_property_purchase",
+
+            "preferred_contact_time",
+
+            "appointment_interest"
+        ]
+
+        for field in qualification_fields:
+
+            value = qualification.get(field)
+            if value in ["None", "none", "null", "Null"]:
+                value = None
+
+            if field in ["previous_property_purchase", "appointment_interest"] and value is not None:
+                if isinstance(value, str):
+                    if value.lower() in ["true", "yes", "1", "y"]:
+                        value = True
+                    elif value.lower() in ["false", "no", "0", "n"]:
+                        value = False
+                    else:
+                        value = None
+
+            if value is not None:
+
+                setattr(
+                    lead,
+                    field,
+                    value
+                )
+
+        # ==================================================
+        # 14. CALCULATE SCORE
+        # ==================================================
+
+        try:
+
+            score, status = score_lead(
+                lead
+            )
+
+        except Exception as e:
+
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    f"Lead scoring error: {str(e)}"
+                )
+            )
+
+        lead.qualification_score = score
+
+        lead.qualification_status = status
+
+        # ==================================================
+        # 15. SAVE AI MESSAGE
+        # ==================================================
+
+        add_message(
+            lead_id=lead.id,
+            role="assistant",
+            content=ai_reply
+        )
+
+        # ==================================================
+        # 16. COMMIT LEAD
+        # ==================================================
+
+        try:
+
+            db.commit()
+
+            db.refresh(lead)
+
+        except Exception as e:
+            if 'lead' in locals() and lead:
+
+                history = get_conversation_history(lead.id)
+                if history and history[-1].get("role") == "user":
+                    history.pop()
+
+            db.rollback()
+
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    f"Database error: {str(e)}"
+                )
+            )
+
+        # ==================================================
+        # 17. CHECK APPOINTMENT REQUEST
+        # ==================================================
+
+        appointment_requested = (
+            appointment_data.get(
+                "requested",
+                False
+            )
+        )
+
+        # ==================================================
+        # 18. APPOINTMENT REQUEST
+        # ==================================================
+
+        if appointment_requested:
+
+            # --------------------------------------------------
+            # Get available slots
+            # --------------------------------------------------
+
+            slots = get_available_slots(
+                db
+            )
+
+            # --------------------------------------------------
+            # Filter according to AI extraction
+            # --------------------------------------------------
+
+            available_slots = filter_slots(
+                available_slots=slots,
+
+                appointment_date=(
+                    appointment_data.get(
+                        "date"
+                    )
+                ),
+
+                time_preference=(
+                    appointment_data.get(
+                        "time_preference"
+                    )
+                ),
+
+                specific_time=(
+                    appointment_data.get(
+                        "time"
+                    )
+                )
+            )
+
+            # ==================================================
+            # 19. NO MATCHING SLOT
+            # ==================================================
+
+            if not available_slots:
+
+                # IMPORTANT:
+                # Do NOT save the old filtered appointment
+                # as pending.
+                #
+                # The user may respond:
+                # "yes please show"
+                #
+                # In that case we need to show ALL slots.
+
+                clear_pending_appointment(
+                    lead.id
+                )
+
+                reply = (
+                    "I couldn't find an available "
+                    "slot matching your requested "
+                    "date and time. Would you like "
+                    "me to show you other available "
+                    "slots?"
+                )
+
+                return {
+                    "lead_id": lead.id,
+
+                    "reply": reply,
+
+                    "intent": "book_appointment",
+
+                    "qualification": qualification,
+
+                    "qualification_score": score,
+
+                    "qualification_status": status,
+
+                    "appointment": appointment_data,
+
+                    "available_slots": []
+                }
+
+            # ==================================================
+            # 20. EXACT TIME REQUESTED
+            # ==================================================
+
+            requested_time = (
                 appointment_data.get(
                     "time"
                 )
             )
-        )
 
-        # ==================================================
-        # 19. NO MATCHING SLOT
-        # ==================================================
+            if requested_time:
 
-        if not available_slots:
+                slot = available_slots[0]
 
-            # IMPORTANT:
-            # Do NOT save the old filtered appointment
-            # as pending.
-            #
-            # The user may respond:
-            # "yes please show"
-            #
-            # In that case we need to show ALL slots.
+                try:
 
-            clear_pending_appointment(
-                lead.id
-            )
+                    appointment = create_appointment(
+                        db=db,
 
-            reply = (
-                "I couldn't find an available "
-                "slot matching your requested "
-                "date and time. Would you like "
-                "me to show you other available "
-                "slots?"
-            )
+                        lead_id=lead.id,
 
-            return {
-                "lead_id": lead.id,
+                        appointment_date=(
+                            slot["date"]
+                        ),
 
-                "reply": reply,
+                        appointment_time=(
+                            slot["time"]
+                        )
+                    )
 
-                "intent": "book_appointment",
+                except Exception as e:
 
-                "qualification": qualification,
+                    db.rollback()
 
-                "qualification_score": score,
+                    raise HTTPException(
+                        status_code=409,
+                        detail=str(e)
+                    )
 
-                "qualification_status": status,
+                return appointment_response(
+                    lead=lead,
 
-                "appointment": appointment_data,
+                    appointment=appointment,
 
-                "available_slots": []
-            }
+                    qualification=qualification,
 
-        # ==================================================
-        # 20. EXACT TIME REQUESTED
-        # ==================================================
+                    score=score,
 
-        requested_time = (
-            appointment_data.get(
-                "time"
-            )
-        )
+                    status=status
+                )
 
-        if requested_time:
+            # ==================================================
+            # 21. ONE MATCHING SLOT
+            # ==================================================
 
-            slot = available_slots[0]
+            if len(available_slots) == 1:
 
-            try:
+                slot = available_slots[0]
 
-                appointment = create_appointment(
-                    db=db,
+                # Save one pending slot
 
+                save_pending_appointment(
                     lead_id=lead.id,
 
                     appointment_date=(
@@ -1073,60 +1130,63 @@ def chat(
 
                     appointment_time=(
                         slot["time"]
+                    ),
+
+                    available_slots=(
+                        available_slots
                     )
                 )
 
-            except Exception as e:
-
-                db.rollback()
-
-                raise HTTPException(
-                    status_code=409,
-                    detail=str(e)
+                reply = (
+                    f"I have {slot['time']} "
+                    f"available on {slot['date']}. "
+                    "Would you like me to book it?"
                 )
 
-            return appointment_response(
-                lead=lead,
+                add_message(
+                    lead_id=lead.id,
+                    role="assistant",
+                    content=reply
+                )
 
-                appointment=appointment,
+                return {
+                    "lead_id": lead.id,
 
-                qualification=qualification,
+                    "reply": reply,
 
-                score=score,
+                    "intent": "book_appointment",
 
-                status=status
-            )
+                    "qualification": qualification,
 
-        # ==================================================
-        # 21. ONE MATCHING SLOT
-        # ==================================================
+                    "qualification_score": score,
 
-        if len(available_slots) == 1:
+                    "qualification_status": status,
 
-            slot = available_slots[0]
+                    "appointment": {
+                        **appointment_data,
+                        "pending": True
+                    },
 
-            # Save one pending slot
+                    "available_slots": available_slots
+                }
+
+            # ==================================================
+            # 22. MULTIPLE MATCHING SLOTS
+            # ==================================================
 
             save_pending_appointment(
                 lead_id=lead.id,
 
-                appointment_date=(
-                    slot["date"]
-                ),
+                appointment_date=None,
 
-                appointment_time=(
-                    slot["time"]
-                ),
+                appointment_time=None,
 
-                available_slots=(
-                    available_slots
-                )
+                available_slots=available_slots
             )
 
             reply = (
-                f"I have {slot['time']} "
-                f"available on {slot['date']}. "
-                "Would you like me to book it?"
+                "Sure! Here are the available "
+                "appointment slots. Please choose one."
             )
 
             add_message(
@@ -1148,75 +1208,32 @@ def chat(
 
                 "qualification_status": status,
 
-                "appointment": {
-                    **appointment_data,
-                    "pending": True
-                },
+                "appointment": appointment_data,
 
                 "available_slots": available_slots
             }
 
         # ==================================================
-        # 22. MULTIPLE MATCHING SLOTS
+        # 23. GENERAL CONVERSATION
         # ==================================================
-
-        save_pending_appointment(
-            lead_id=lead.id,
-
-            appointment_date=None,
-
-            appointment_time=None,
-
-            available_slots=available_slots
-        )
-
-        reply = (
-            "Sure! Here are the available "
-            "appointment slots. Please choose one."
-        )
-
-        add_message(
-            lead_id=lead.id,
-            role="assistant",
-            content=reply
-        )
 
         return {
             "lead_id": lead.id,
-
-            "reply": reply,
-
-            "intent": "book_appointment",
-
+            "reply": ai_reply,
+            "intent": "general",
             "qualification": qualification,
-
             "qualification_score": score,
-
             "qualification_status": status,
-
             "appointment": appointment_data,
-
-            "available_slots": available_slots
+            "available_slots": None
         }
+    except Exception as e:
+        if "lead" in locals() and lead:
 
-    # ==================================================
-    # 23. GENERAL CONVERSATION
-    # ==================================================
-
-    return {
-        "lead_id": lead.id,
-
-        "reply": ai_reply,
-
-        "intent": "general",
-
-        "qualification": qualification,
-
-        "qualification_score": score,
-
-        "qualification_status": status,
-
-        "appointment": appointment_data,
-
-        "available_slots": None
-    }
+            history = get_conversation_history(lead.id)
+            if history and history[-1].get("role") == "user":
+                history.pop()
+        import traceback
+        with open("chat_error.log", "w") as f:
+            f.write(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Unexpected API error")

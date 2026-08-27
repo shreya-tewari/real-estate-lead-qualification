@@ -16,7 +16,7 @@ type ActivePanel = 'user' | 'admin';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { auth, isAuthenticated, isAdmin, loginAsUser, loginAsAdmin } = useAuth();
+  const { auth, isAuthenticated, isAdmin, loginAsUser, loginAsAdmin, logout } = useAuth();
   const { updateQualificationData, resetAll } = useLead();
 
   const initialTab = searchParams.get('tab') === 'admin' ? 'admin' : 'user';
@@ -25,13 +25,21 @@ function LoginContent() {
   // If already authenticated, redirect immediately
   useEffect(() => {
     if (isAuthenticated) {
+      const isRequestingAdmin = searchParams.get('tab') === 'admin';
+      
+      if (!isAdmin && isRequestingAdmin) {
+        // They want to login as admin, but are logged in as user. Force logout.
+        logout();
+        return;
+      }
+      
       if (isAdmin) {
         router.replace('/admin');
       } else {
         router.replace('/conversation');
       }
     }
-  }, [isAuthenticated, isAdmin, router]);
+  }, [isAuthenticated, isAdmin, router, searchParams, logout]);
 
   // User form
   const [userName, setUserName] = useState('');

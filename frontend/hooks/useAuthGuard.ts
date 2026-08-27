@@ -27,14 +27,14 @@ export function useAuthGuard(requireAdmin = false) {
 
     if (requireAdmin && !isAdmin) {
       // Regular user tried to hit an admin-only page
-      router.replace('/conversation');
+      router.replace('/login?tab=admin');
       return;
     }
 
-    if (!requireAdmin && isAdmin) {
-      // Admin tried to hit a user-only page
-      router.replace('/admin');
-    }
+    // Allow admins to test user pages without being forced out
+    // if (!requireAdmin && isAdmin) {
+    //   router.replace('/admin');
+    // }
   }, [isLoading, isAuthenticated, isAdmin, requireAdmin, router]);
 
   return { auth, isAuthenticated, isAdmin, isLoading };
