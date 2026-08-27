@@ -26,13 +26,13 @@ function LoginContent() {
   useEffect(() => {
     if (isAuthenticated) {
       const isRequestingAdmin = searchParams.get('tab') === 'admin';
-      
+
       if (!isAdmin && isRequestingAdmin) {
         // They want to login as admin, but are logged in as user. Force logout.
         logout();
         return;
       }
-      
+
       if (isAdmin) {
         router.replace('/admin');
       } else {

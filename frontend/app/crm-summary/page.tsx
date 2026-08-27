@@ -6,11 +6,10 @@ import { useLead } from '@/contexts/LeadContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import Header from '@/components/layout/Header';
 import SalesSummary from '@/components/crm/SalesSummary';
-import Badge from '@/components/common/Badge';
 import {
   User, Mail, Phone, Calendar as CalIcon, DollarSign, MapPin, Home,
   Clock, CreditCard, Target, Download, Share2, MessageSquare, RefreshCw,
-  Users, Award, CheckCircle
+  CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -173,31 +172,27 @@ ${salesBrief}
     router.push('/conversation');
   };
 
-  const scoreBadgeVariant = score.status === 'Highly Qualified' ? 'success' : score.status === 'Partially Qualified' ? 'warning' : 'danger';
-  const scoreHeaderColor = score.status === 'Highly Qualified' ? 'linear-gradient(135deg, #10b981, #059669)' : score.status === 'Partially Qualified' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
+
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8faff 0%, #fdf5ff 100%)' }} className="page-enter">
-      <Header showBreadcrumb adminLink />
+      <Header showBreadcrumb />
 
       {/* Success banner */}
       <div style={{ background: 'var(--gradient)', padding: '28px 24px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'rgba(255,255,255,0.08)', borderRadius: '50%' }} />
         </div>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 52, height: 52, background: 'rgba(255,255,255,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle size={28} color="white" />
-            </div>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: 'white', margin: 0 }}>Lead Qualification Complete!</h1>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 3 }}>
-                {lead.name} has been qualified and assigned to {assignedTeam}
-              </p>
-            </div>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 52, height: 52, background: 'rgba(255,255,255,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CheckCircle size={28} color="white" />
           </div>
-          <Badge label={score.status} variant={scoreBadgeVariant} dot size="md" />
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'white', margin: 0 }}>Lead Qualification Complete!</h1>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 3 }}>
+              Thank you, {lead.name}! Our team will be in touch with you shortly.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -239,7 +234,7 @@ ${salesBrief}
         </div>
 
         {/* Cards grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 28 }}>
           <InfoCard
             title="Lead Profile"
             subtitle="Contact Information"
@@ -262,19 +257,6 @@ ${salesBrief}
               { label: 'Property Type', value: lead.propertyType, icon: <Home size={13} /> },
               { label: 'Timeline', value: lead.timeline, icon: <Clock size={13} /> },
               { label: 'Financing', value: lead.financing, icon: <CreditCard size={13} /> },
-            ]}
-          />
-
-          <InfoCard
-            title="Lead Quality & Assignment"
-            subtitle="Scoring & routing results"
-            headerColor={scoreHeaderColor}
-            rows={[
-              { label: 'Lead Score', value: `${score.score}/100`, icon: <Award size={13} /> },
-              { label: 'Status', value: score.status, icon: <CheckCircle size={13} /> },
-              { label: 'Assigned Team', value: assignedTeam, icon: <Users size={13} /> },
-              ...(appointment ? [{ label: 'Appointment', value: `${appointment.dayLabel} · ${appointment.time}`, icon: <CalIcon size={13} /> }] : []),
-              ...(appointment ? [{ label: 'Consultant', value: appointment.consultant, icon: <User size={13} /> }] : []),
             ]}
           />
         </div>
