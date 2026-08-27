@@ -1,0 +1,101 @@
+[
+  {
+    "id": "PROP001",
+    "name": "Marina Heights",
+    "location": "Dubai Marina",
+    "city": "Dubai",
+    "property_type": "Apartment",
+    "bedrooms": 1,
+    "price": 550000,
+    "currency": "USD",
+    "area_sqft": 850,
+    "status": "Available",
+    "description": "Modern 1-bedroom apartment in Dubai Marina with waterfront views.",
+    "features": [
+      "Swimming pool",
+      "Gym",
+      "24/7 security",
+      "Parking",
+      "Waterfront view"
+    ]
+  },
+  {
+    "id": "PROP002",
+    "name": "Downtown Residence",
+    "location": "Downtown Dubai",
+    "city": "Dubai",
+    "property_type": "Apartment",
+    "bedrooms": 2,
+    "price": 680000,
+    "currency": "USD",
+    "area_sqft": 1200,
+    "status": "Available",
+    "description": "Spacious 2-bedroom apartment close to Burj Khalifa and Dubai Mall.",
+    "features": [
+      "City view",
+      "Swimming pool",
+      "Gym",
+      "Covered parking",
+      "Concierge"
+    ]
+  },
+  {
+    "id": "PROP003",
+    "name": "Palm Garden Villa",
+    "location": "Palm Jumeirah",
+    "city": "Dubai",
+    "property_type": "Villa",
+    "bedrooms": 4,
+    "price": 1500000,
+    "currency": "USD",
+    "area_sqft": 3200,
+    "status": "Available",
+    "description": "Luxury 4-bedroom villa on Palm Jumeirah with private outdoor space.",
+    "features": [
+      "Private garden",
+      "Private pool",
+      "Beach access",
+      "Parking",
+      "Security"
+    ]
+  },
+  {
+    "id": "PROP004",
+    "name": "JVC Family Apartment",
+    "location": "Jumeirah Village Circle",
+    "city": "Dubai",
+    "property_type": "Apartment",
+    "bedrooms": 2,
+    "price": 420000,
+    "currency": "USD",
+    "area_sqft": 1100,
+    "status": "Available",
+    "description": "Affordable 2-bedroom apartment suitable for families and investors.",
+    "features": [
+      "Swimming pool",
+      "Gym",
+      "Children's play area",
+      "Parking"
+    ]
+  },
+  {
+    "id": "PROP005",
+    "name": "Business Bay Executive",
+    "location": "Business Bay",
+    "city": "Dubai",
+    "property_type": "Apartment",
+    "bedrooms": 1,
+    "price": 620000,
+    "currency": "USD",
+    "area_sqft": 900,
+    "status": "Available",
+    "description": "Premium 1-bedroom apartment in Business Bay suitable for investment.",
+    "features": [
+      "Business district location",
+      "Gym",
+      "Swimming pool",
+      "Concierge",
+      "Parking"
+    ]
+  }
+]
