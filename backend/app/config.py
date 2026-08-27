@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+from typing import Any
 
 
 class Settings(BaseSettings):
@@ -12,5 +14,12 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    @field_validator("openai_api_key", mode="before")
+    @classmethod
+    def clean_api_key(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
-settings = Settings()
+
+settings = Settings()
