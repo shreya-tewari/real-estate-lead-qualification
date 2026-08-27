@@ -27,7 +27,8 @@ def create_lead(
         email=lead_data.email,
         phone=lead_data.phone,
         source=lead_data.source,
-        property_interest=lead_data.property_interest
+        property_interest=lead_data.property_interest,
+        location=lead_data.location
     )
 
     db.add(lead)
@@ -79,3 +80,27 @@ def get_lead(
         lead_dict['appointment_time'] = appointment.appointment_time
         
     return lead_dict
+
+from app.services.conversation_service import get_conversation_history
+
+@router.get(
+    "/{lead_id}/history",
+)
+def get_lead_history(
+    lead_id: int,
+    db: Session = Depends(get_db)
+):
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id)
+        .first()
+    )
+
+    if not lead:
+        raise HTTPException(
+            status_code=404,
+            detail="Lead not found"
+        )
+        
+    history = get_conversation_history(lead_id)
+    return {"history": history}

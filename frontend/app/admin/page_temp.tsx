@@ -11,7 +11,6 @@ import {
   Eye, MessageSquare, RefreshCw, Star, Filter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Modal from '@/components/common/Modal';
 
 export default function AdminPage() {
   const { isLoading } = useAuthGuard(true); // admin-only route
@@ -20,13 +19,6 @@ export default function AdminPage() {
   const [leads, setLeads] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Modal State
-  const [viewLead, setViewLead] = useState<any>(null);
-  const [viewHistory, setViewHistory] = useState<any[]>([]);
-  const [bookLead, setBookLead] = useState<any>(null);
-  const [slots, setSlots] = useState<any[]>([]);
-  const [booking, setBooking] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -356,12 +348,7 @@ export default function AdminPage() {
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
-                          onClick={() => {
-                            setViewLead(lead);
-                            fetch(`http://localhost:8000/api/leads/${lead.id}/history`)
-                              .then(r => r.json())
-                              .then(d => setViewHistory(d.history || []));
-                          }}
+                          onClick={() => toast.success(`Viewing details for ${lead.name}`)}
                           style={{ padding: '5px 10px', background: '#f0f4ff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' }}
                           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#e0e8ff'}
                           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#f0f4ff'}
@@ -370,12 +357,7 @@ export default function AdminPage() {
                           View
                         </button>
                         <button
-                          onClick={() => {
-                            setBookLead(lead);
-                            fetch('http://localhost:8000/api/appointments/slots')
-                              .then(r => r.json())
-                              .then(d => setSlots(d.slots || []));
-                          }}
+                          onClick={() => toast.success(`Manual booking interface for ${lead.name} coming soon!`)}
                           style={{ padding: '5px 10px', background: '#f0fdf4', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#10b981', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' }}
                           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#dcfce7'}
                           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#f0fdf4'}
@@ -392,122 +374,6 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
-
-      {/* View Lead Modal */}
-      <Modal isOpen={!!viewLead} onClose={() => setViewLead(null)} title="Lead Intelligence Profile" size="lg">
-        {viewLead && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ width: 50, height: 50, background: 'var(--gradient)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: 'white' }}>
-                {viewLead.name.charAt(0)}
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 18 }}>{viewLead.name}</h3>
-                <p style={{ margin: 0, color: 'var(--text-muted)' }}>{viewLead.email} | {viewLead.phone}</p>
-              </div>
-            </div>
-            
-            <div style={{ background: '#f8f9fa', padding: 16, borderRadius: 12 }}>
-              <h4 style={{ margin: '0 0 10px 0', fontSize: 14, color: 'var(--primary)' }}>AI Sales Briefing</h4>
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                {viewLead.ai_summary || "No AI summary generated yet."}
-              </p>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Qualification</p>
-                <div style={{ padding: 12, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                  <p style={{ margin: '0 0 4px 0', fontSize: 13 }}><strong>Status:</strong> {viewLead.qualification_status}</p>
-                  <p style={{ margin: 0, fontSize: 13 }}><strong>Score:</strong> {viewLead.qualification_score || viewLead.score}</p>
-                </div>
-              </div>
-              <div>
-                <p style={{ margin: '0 0 4px 0', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Preferences</p>
-                <div style={{ padding: 12, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                  <p style={{ margin: '0 0 4px 0', fontSize: 13 }}><strong>Budget:</strong> {viewLead.budget || 'N/A'}</p>
-                  <p style={{ margin: 0, fontSize: 13 }}><strong>Timeline:</strong> {viewLead.purchase_timeline || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <p style={{ margin: '0 0 8px 0', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Conversation History</p>
-              <div style={{ maxHeight: 300, overflowY: 'auto', background: '#fafafa', padding: 16, borderRadius: 12, border: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {viewHistory.length === 0 ? (
-                  <p style={{ fontSize: 13, color: '#999', textAlign: 'center', margin: '20px 0' }}>No history found.</p>
-                ) : (
-                  viewHistory.map((msg, idx) => (
-                    <div key={idx} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                      <p style={{ margin: '0 0 4px 0', fontSize: 11, color: '#aaa', textAlign: msg.role === 'user' ? 'right' : 'left' }}>
-                        {msg.role === 'user' ? viewLead.name : 'AI Agent'}
-                      </p>
-                      <div style={{ background: msg.role === 'user' ? 'var(--gradient)' : 'white', color: msg.role === 'user' ? 'white' : '#333', padding: '10px 14px', borderRadius: 16, border: msg.role === 'user' ? 'none' : '1px solid #eee', fontSize: 13, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Book Appointment Modal */}
-      <Modal isOpen={!!bookLead} onClose={() => setBookLead(null)} title="Schedule Manual Appointment" size="sm">
-        {bookLead && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)' }}>
-              Select an available time slot to book an appointment on behalf of <strong>{bookLead.name}</strong>.
-            </p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-              {slots.length === 0 ? (
-                <p style={{ fontSize: 13, color: '#999', textAlign: 'center' }}>No available slots.</p>
-              ) : (
-                slots.map((slot, idx) => (
-                  <button
-                    key={idx}
-                    disabled={booking}
-                    onClick={() => {
-                      setBooking(true);
-                      fetch('http://localhost:8000/api/appointments', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          lead_id: bookLead.id,
-                          appointment_date: slot.date,
-                          appointment_time: slot.time
-                        })
-                      })
-                      .then(r => {
-                        if (r.ok) {
-                          toast.success('Appointment booked!');
-                          setBookLead(null);
-                          window.location.reload();
-                        } else {
-                          toast.error('Failed to book appointment');
-                        }
-                      })
-                      .finally(() => setBooking(false));
-                    }}
-                    style={{
-                      padding: 12, background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      cursor: 'pointer', transition: 'all 0.2s', opacity: booking ? 0.6 : 1
-                    }}
-                  >
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{slot.date}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>{slot.time}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
-
     </div>
   );
 }

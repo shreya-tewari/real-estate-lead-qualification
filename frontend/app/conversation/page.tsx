@@ -89,9 +89,12 @@ export default function ConversationPage() {
       });
       
       const data = await res.json();
-      addMessage({ role: 'ai', content: data.reply });
-
-      // Sync qualification data returned from AI backend
+      
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to communicate with AI');
+      }
+      
+      addMessage({ role: 'ai', content: data.reply || "Sorry, I encountered an error. Please try again." });
       if (data.qualification) {
         updateQualificationData({
           buyerType: data.qualification.buyer_type || '',

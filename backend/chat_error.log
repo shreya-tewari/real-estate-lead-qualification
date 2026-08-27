@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "C:\Users\anushkapolley\Documents\GitHub\real-estate-lead-qualification\backend\app\api\chat.py", line 742, in process_chat
+    get_conversation_history(
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'get_conversation_history' where it is not associated with a value

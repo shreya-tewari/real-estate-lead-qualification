@@ -13,7 +13,8 @@ from app.config import settings
 
 client = OpenAI(
     api_key=settings.groq_api_key,
-    base_url="https://api.groq.com/openai/v1"
+    base_url="https://api.groq.com/openai/v1",
+    max_retries=1
 )
 
 

@@ -160,3 +160,17 @@ def create_appointment(
     # ----------------------------------------------
 
     return appointment
+
+@router.get(
+    "/all",
+    response_model=list[AppointmentResponse]
+)
+def get_all_appointments(
+    db: Session = Depends(get_db)
+):
+    appointments = (
+        db.query(Appointment)
+        .order_by(Appointment.appointment_date.desc())
+        .all()
+    )
+    return appointments

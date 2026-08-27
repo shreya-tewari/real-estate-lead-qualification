@@ -9,6 +9,7 @@ class LeadCreate(BaseModel):
     phone: Optional[str] = None
     source: Optional[str] = None
     property_interest: Optional[str] = None
+    location: Optional[str] = None
 
 
 class LeadResponse(BaseModel):
