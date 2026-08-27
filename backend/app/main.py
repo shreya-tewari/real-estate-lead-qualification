@@ -42,3 +42,50 @@ def health():
     return {
         "status": "healthy"
     }
+
+
+@app.get("/api/test-openai")
+def test_openai():
+    import socket
+    import urllib.request
+    import traceback
+    from openai import OpenAI
+    from app.config import settings
+
+    results = {}
+    # 1. Test DNS resolution
+    try:
+        ip = socket.gethostbyname("api.openai.com")
+        results["dns"] = f"Success: {ip}"
+    except Exception as e:
+        results["dns"] = f"Failed: {str(e)}"
+        
+    # 2. Test TCP connection
+    try:
+        s = socket.create_connection(("api.openai.com", 443), timeout=5)
+        s.close()
+        results["tcp"] = "Success"
+    except Exception as e:
+        results["tcp"] = f"Failed: {str(e)}"
+        
+    # 3. Test simple HTTP GET
+    try:
+        req = urllib.request.Request(
+            "https://api.openai.com/v1/models",
+            headers={"Authorization": f"Bearer {settings.openai_api_key}"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            results["http"] = f"Success: {response.status}"
+    except Exception as e:
+        results["http"] = f"Failed: {str(e)}"
+        
+    # 4. Test OpenAI client call
+    try:
+        client = OpenAI(api_key=settings.openai_api_key)
+        models = client.models.list()
+        results["openai_client"] = f"Success: {len(models.data)} models found"
+    except Exception as e:
+        results["openai_client"] = f"Failed: {str(e)}"
+        results["openai_client_traceback"] = traceback.format_exc()
+        
+    return results
